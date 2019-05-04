@@ -1,0 +1,6 @@
+{
+    "port": "COM6",
+    "board": "arduino:avr:nano",
+    "sketch": "bt-test.ino",
+    "configuration": "cpu=atmega328"
+}
