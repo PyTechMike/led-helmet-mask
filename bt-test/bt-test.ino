@@ -41,7 +41,7 @@ void setup() {
 }
 
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = {xPattern, confettiRed, smartRainbow, basicRainbow, trailDot, equalizer1, equalizer2, equalizer3, police}; 
+SimplePatternList gPatterns = {xEyesPattern, confettiRed, smartRainbow, basicRainbow, roboCop, equalizer1, equalizer2, equalizer3, police}; 
                                        
 uint16_t xscale = 30;                                       
 uint16_t yscale = 30;        
@@ -50,7 +50,7 @@ uint8_t maxPaletteChanges = 24;
 int lastBrightness = 80; 
 int lastSensitivity = 90; 
 int equalizerSenitivity = 90;
-int gCurrentPatternNumber = 4; 
+int gCurrentPatternNumber = 0; 
 int lastPatternNumber = 0; 
 uint8_t gHue = 0;
 
@@ -113,7 +113,7 @@ void setMode() {
 				isTurnedOn = false;
 				lastPatternNumber = gCurrentPatternNumber;
 			}
-			if (data == "td") { //trailDot
+			if (data == "td") { //roboCop
 				gCurrentPatternNumber = 4;
 			}
 			if (data == "bm") { //bpm
@@ -183,15 +183,16 @@ void showMode() {
 
 DEFINE_GRADIENT_PALETTE (glitchGradientMapBlue) { 0, 44, 169, 133, 44, 7, 255, 136, 45, 0, 0, 0, 46, 7, 255, 136, 140, 44, 169, 133, 164, 7, 255, 136, 165, 0, 0, 0, 166, 7, 255, 136, 190, 44, 169, 133,	191, 0, 0, 0, 192, 44, 169, 133, 195, 7, 255, 136, 196, 0, 0, 0, 197, 7, 255, 136, 225, 7, 255, 136, 226, 0, 0, 0, 227, 7, 255, 136, 255, 44, 169, 133 };
 
-int xMatrix[NUM_LEDS] = { 
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0,       0, 0, 0, 0,
+int xEyesMatrix[NUM_LEDS] = { 
+	1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	1, 0, 0, 1,       1, 0, 0, 1,
+	   0, 0,             0, 0
 };
 
-void xPattern() {
-	matrixPatternCreater(xMatrix);
+void xEyesPattern() {
+	matrixPatternCreater(xEyesMatrix);
 }
 
 void matrixPatternCreater(int matrixPattern[NUM_LEDS]) {
@@ -219,15 +220,24 @@ void confettiRed() {
 	leds[pos] = CHSV( 0, 200, 255);
 }
 
-void trailDot() {
-	uint8_t fadeval = 250;
-	uint8_t bpm = 15;
+void roboCop() {
+	uint8_t fadeval = 240;
+	uint8_t bpm = 50;
 
-	uint8_t outer = beatsin16(bpm, 0, NUM_LEDS - 1);
-	leds[outer] = CHSV(gHue, 200, 255);
+	uint8_t dot = beatsin8(bpm, 10, 19);
+	leds[dot] = CHSV(gHue, 200, 255);
+	leds[39 - dot] = CHSV(gHue, 200, 255);
 
 	nscale8(leds, NUM_LEDS, fadeval);
 }
+
+int policeMatrix[NUM_LEDS] = { 
+	0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+	1, 1, 1, 1,       0, 0, 0, 0,
+	   0, 0,             1, 1
+};
 
 void police() {
 	int isRedPart = true;  
@@ -238,35 +248,23 @@ void police() {
 	}
 
 	for ( int i = 0; i < NUM_LEDS; i++) { 
-		if(isRedPart) {
-			if(policeLightsCounter % 2 == 0) {
-				if(policeLightsModeCounter % 2 == 0) {
-					if(i < 42) {
-						leds[i] = CHSV(0, 240, 255);
-					}
-				} else {
-					if(i < 16 || i > 78) {
-						leds[i] = CHSV(0, 240, 255);
-					}
+		if(policeLightsCounter % 2 == 0) { // turn on
+			if(policeLightsModeCounter % 2 == 0) { // 1 mode
+				if(policeMatrix[i] == 0 && isRedPart) {
+					leds[i] = CHSV(0, 240, 255);
+				} else if(policeMatrix[i] == 1 && !isRedPart) {
+					leds[i] = CHSV(160, 240, 255);
 				}
 			} else {
-				leds[i] = CHSV(0, 0, 0);
-			} 
+				if(i < 20 && isRedPart) {
+					leds[i] = CHSV(0, 240, 255);
+				} else if(i > 19 && !isRedPart) {
+					leds[i] = CHSV(160, 240, 255);
+				}
+			}
 		} else {
-			if(policeLightsCounter % 2 == 0) {
-				if(policeLightsModeCounter % 2 == 0) {
-					if(i > 54) {
-						leds[i] = CHSV(160, 240, 255);
-					}
-				} else {
-					if(i > 15 && i < 42 || i < 79 && i > 54) {
-						leds[i] = CHSV(160, 240, 255);
-					}
-				}
-			} else {
-				leds[i] = CHSV(0, 0, 0);
-			} 
-		}
+			leds[i] = CHSV(0, 0, 0);
+		} 
 	}
 }
 
@@ -276,40 +274,22 @@ void basicRainbow() {
 	fill_rainbow(leds, NUM_LEDS, (beatA+beatB)/2, 1); 
 }
 
-// int equalizerBreathMatrix[NUM_LEDS] = { 
-// 		  	 3, 2, 1, 0, 1, 2, 3, 
-// 		  4, 3, 2, 1, 0, 1, 2, 3, 4, 
-// 	6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
-// 	6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
-// 	6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
-// 	6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
-// 	   5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5,
-// 		  4, 3, 2, 1, 0, 1, 2, 3, 4,
-// 		  		2, 1, 0, 1, 2
-// };
-
-// int equalizerBreathMatrix[NUM_LEDS] = { 
-// 		  	 0, 0, 0, 0, 0, 0, 0, 
-// 		  0, 0, 0, 0, 0, 0, 0, 0, 0, 
-// 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 	   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 		  0, 0, 0, 0, 0, 0, 0, 0, 0,
-// 		  		0, 0, 0, 0, 0
-// };
-
+	// 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	// 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	// 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	// 0, 0, 0, 0,       0, 0, 0, 0,
+	//    0, 0,             0, 0
 
 int equalizerOXOMatrix[NUM_LEDS] = { 
-		  	 6, 6, 4, 4, 4, 6, 6, 
-		  3, 6, 6, 6, 4, 6, 6, 6, 3, 
-	9, 5, 5, 3, 6, 6, 6, 6, 6, 3, 5, 5, 9,
-	5, 4, 4, 5, 3
+	9, 3, 3, 2, 9, 9, 2, 3, 3, 9,
+	3, 4, 4, 3, 2, 2, 3, 4, 4, 3,
+	3, 4, 4, 3, 1, 1, 3, 4, 4, 3,
+	0, 3, 3, 1,       1, 3, 3, 0,
+	   0, 0,             0, 0
 };
 
 void equalizer1() {
-	equalizerSingle(equalizerOXOMatrix, 7);
+	equalizerSingle(equalizerOXOMatrix, 5);
 }
 
 
@@ -325,13 +305,14 @@ void equalizer2() {
 
 
 int equalizerBreathMatrix[NUM_LEDS] = { 
-		  	 3, 2, 1, 0, 1, 2, 3, 
-		  4, 3, 2, 1, 0, 1, 2, 3, 4, 
-	6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6,
-	6, 5, 4, 3
+	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
+	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
+	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
+	4, 3, 2, 1,       1, 2, 3, 4,
+	   3, 2,             2, 3
 };
 void equalizer3() {
-	equalizerBreath(equalizerBreathMatrix, 7);
+	equalizerBreath(equalizerBreathMatrix, 5);
 }
 
 void equalizerBreath(int equalizerMatrix[NUM_LEDS], int equalizerBands) {
