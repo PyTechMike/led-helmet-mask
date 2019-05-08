@@ -15,6 +15,7 @@ CRGB leds[NUM_LEDS];
 #define BRIGHTNESS          70
 #define FRAMES_PER_SECOND  120
 
+#define qsuba(x, b)  ((x>b)?x-b:0) 
 
 
 CRGBPalette16 currentPalette=LavaColors_p;
@@ -42,6 +43,7 @@ void setup() {
 
 typedef void (*SimplePatternList[])();
 SimplePatternList gPatterns = {xEyesPattern, confettiRed, smartRainbow, basicRainbow, roboCop, equalizer1, equalizer2, equalizer3, police}; 
+DEFINE_GRADIENT_PALETTE (glitchGradientMapBlue) { 0, 44, 169, 133, 44, 7, 255, 136, 45, 0, 0, 0, 46, 7, 255, 136, 140, 44, 169, 133, 164, 7, 255, 136, 165, 0, 0, 0, 166, 7, 255, 136, 190, 44, 169, 133,	191, 0, 0, 0, 192, 44, 169, 133, 195, 7, 255, 136, 196, 0, 0, 0, 197, 7, 255, 136, 225, 7, 255, 136, 226, 0, 0, 0, 227, 7, 255, 136, 255, 44, 169, 133 };
                                        
 uint16_t xscale = 30;                                       
 uint16_t yscale = 30;        
@@ -50,7 +52,7 @@ uint8_t maxPaletteChanges = 24;
 int lastBrightness = 80; 
 int lastSensitivity = 90; 
 int equalizerSenitivity = 90;
-int gCurrentPatternNumber = 0; 
+int gCurrentPatternNumber = 2; 
 int lastPatternNumber = 0; 
 uint8_t gHue = 0;
 
@@ -59,16 +61,15 @@ uint8_t policeLightsModeCounter = 0;
 uint8_t policeLightsPartsCounter = 0;
 
 bool isEqualizer = false;
+bool isAllModes = false;
+
 int mic = A0;
 const int sampleTime = 20; 
 int micOut;
 
-// #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-// void nextPattern() // nextPattern();
-// {
-//   	gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns); 
-// }
+
 void loop() {
 	changeByTime();
 	getData();     
@@ -90,6 +91,9 @@ void changeByTime() {
 	EVERY_N_SECONDS( 5 ) {
 		policeLightsModeCounter++;
 		targetPalette = CRGBPalette16(CHSV(random8(), 255, random8(128,255)), CHSV(random8(), 255, random8(128,255)), CHSV(random8(), 192, random8(128,255)), CHSV(random8(), 255, random8(128,255)));
+	}
+	EVERY_N_SECONDS( 10 ) {
+		nextMode();
 	}
 }
 
@@ -140,6 +144,13 @@ void setMode() {
 			if (data == "pe") { //police
 				gCurrentPatternNumber = 8;
 			}
+			if (data == "am") { //allModes
+				isAllModes = true;
+				nextMode();
+			}
+			if (data != "am") { //allModes
+				isAllModes = false;
+			}
 			if(data.startsWith("bt")) { //bright
 				if(data.substring(2).toInt() != 0) {
 					FastLED.setBrightness(data.substring(2).toInt());
@@ -181,13 +192,21 @@ void showMode() {
 	FastLED.delay(1000 / FRAMES_PER_SECOND);
 }
 
-DEFINE_GRADIENT_PALETTE (glitchGradientMapBlue) { 0, 44, 169, 133, 44, 7, 255, 136, 45, 0, 0, 0, 46, 7, 255, 136, 140, 44, 169, 133, 164, 7, 255, 136, 165, 0, 0, 0, 166, 7, 255, 136, 190, 44, 169, 133,	191, 0, 0, 0, 192, 44, 169, 133, 195, 7, 255, 136, 196, 0, 0, 0, 197, 7, 255, 136, 225, 7, 255, 136, 226, 0, 0, 0, 227, 7, 255, 136, 255, 44, 169, 133 };
+void nextMode() {
+	if(isAllModes) {
+  		gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns); 
+		if (gCurrentPatternNumber == 5 || gCurrentPatternNumber == 6 || gCurrentPatternNumber == 7) { //special for equalizer
+			isEqualizer = false;
+			gCurrentPatternNumber = 8;
+		}
+	}
+}
 
 int xEyesMatrix[NUM_LEDS] = { 
-	1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
-	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
-	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
-	1, 0, 0, 1,       1, 0, 0, 1,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 1, 0, 1, 0, 0, 1, 0, 1, 0,
+	0, 0, 1, 0, 0, 0, 0, 1, 0, 0,
+	0, 1, 0, 1,       1, 0, 1, 0,
 	   0, 0,             0, 0
 };
 
@@ -205,13 +224,14 @@ void matrixPatternCreater(int matrixPattern[NUM_LEDS]) {
 }
 
 void smartRainbow() {
-	for (int i=0; i<20; i++) {
-		uint8_t locn = inoise16(xscale, dist+yscale+i*200);  
-		locn = constrain(locn,48,192);                      
-		uint8_t pixlen = map(locn,48,192,0,NUM_LEDS-1);     
-		leds[pixlen] = ColorFromPalette(currentPalette, pixlen, 255, LINEARBLEND);   
-	}
-	dist += beatsin16(10,1,4);                                                  
+	int thisPhase = beatsin8(6, -64, 64);                           
+	int thatPhase = beatsin8(7, -64, 64);
+
+	for (int i = 0; i < NUM_LEDS; i++) {
+		int colorIndex = cubicwave8((i * 23) + thisPhase) / 2 + cos8((i * 15)+thatPhase) / 2;           
+		int thisBright = qsuba(colorIndex, beatsin8( 7, 0, 96));                                 
+		leds[i] = ColorFromPalette(currentPalette, 255, thisBright, currentBlending);  
+	}                                              
 }
 
 void confettiRed() {
@@ -294,13 +314,14 @@ void equalizer1() {
 
 
 int equalizerXXXMatrix[NUM_LEDS] = { 
-		  	 6, 3, 0, 0, 0, 3, 6, 
-		  4, 2, 6, 3, 0, 3, 6, 2, 4, 
-	6, 3, 6, 4, 2, 6, 3, 6, 2, 4, 6, 3, 6,
-	3, 6, 3
-};
+	2, 9, 9, 5, 3, 3, 5, 9, 9, 2,
+	4, 2, 5, 3, 1, 1, 3, 5, 2, 4,
+	4, 2, 5, 1, 0, 0, 1, 5, 2, 4,
+	4, 2, 5, 0,       0, 5, 2, 4,
+	   2, 5,             5, 2
+} ;
 void equalizer2() {
-	equalizerSingle(equalizerXXXMatrix, 7);
+	equalizerBreath(equalizerXXXMatrix, 6);
 }
 
 
