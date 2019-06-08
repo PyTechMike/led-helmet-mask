@@ -1,5 +1,4 @@
 #include <FastLED.h>
-
 FASTLED_USING_NAMESPACE
 
 #if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
@@ -42,7 +41,7 @@ void setup() {
 }
 
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = {xEyesPattern, confettiRed, smartRainbow, basicRainbow, roboCop, equalizer1, equalizer2, equalizer3, police}; 
+SimplePatternList gPatterns = {basicRainbow, confettiRed, smartRainbow, xEyesPattern, roboCop, equalizer1, equalizer2, equalizer3, police, iEyesPattern, oEyesPattern, equalizer4}; 
 DEFINE_GRADIENT_PALETTE (glitchGradientMapBlue) { 0, 44, 169, 133, 44, 7, 255, 136, 45, 0, 0, 0, 46, 7, 255, 136, 140, 44, 169, 133, 164, 7, 255, 136, 165, 0, 0, 0, 166, 7, 255, 136, 190, 44, 169, 133,	191, 0, 0, 0, 192, 44, 169, 133, 195, 7, 255, 136, 196, 0, 0, 0, 197, 7, 255, 136, 225, 7, 255, 136, 226, 0, 0, 0, 227, 7, 255, 136, 255, 44, 169, 133 };
                                        
 uint16_t xscale = 30;                                       
@@ -52,7 +51,7 @@ uint8_t maxPaletteChanges = 24;
 int lastBrightness = 80; 
 int lastSensitivity = 90; 
 int equalizerSenitivity = 90;
-int gCurrentPatternNumber = 2; 
+int gCurrentPatternNumber = 10; 
 int lastPatternNumber = 0; 
 uint8_t gHue = 0;
 
@@ -121,7 +120,7 @@ void setMode() {
 				gCurrentPatternNumber = 4;
 			}
 			if (data == "bm") { //bpm
-				gCurrentPatternNumber = 3;
+				gCurrentPatternNumber = 0;
 			}
 			if (data == "sr") { //smartRainbow
 				gCurrentPatternNumber = 2;
@@ -138,11 +137,20 @@ void setMode() {
 			if (data == "cr") { //confettiRed
 				gCurrentPatternNumber = 1;
 			}
-			if (data == "xp") { //xPattern
-				gCurrentPatternNumber = 0;
+			if (data == "xp") { //xEyesPattern
+				gCurrentPatternNumber = 3;
 			}
 			if (data == "pe") { //police
 				gCurrentPatternNumber = 8;
+			}
+			if (data == "ip") { //iEyesPattern
+				gCurrentPatternNumber = 9;
+			}
+			if (data == "op") { //oEyesPattern
+				gCurrentPatternNumber = 10;
+			}
+			if (data == "e4") { //equalizer4
+				gCurrentPatternNumber = 11;
 			}
 			if (data == "am") { //allModes
 				isAllModes = true;
@@ -168,7 +176,7 @@ void setMode() {
 				lastSensitivity = data.substring(2).toInt();
 			}
 		}
-		if (gCurrentPatternNumber == 5 || gCurrentPatternNumber == 6 || gCurrentPatternNumber == 7) { //special for equalizer
+		if (gCurrentPatternNumber == 5 || gCurrentPatternNumber == 6 || gCurrentPatternNumber == 7 || gCurrentPatternNumber == 11) { //special for equalizer
 			isEqualizer = true;
 		} else {
 			isEqualizer = false;
@@ -202,7 +210,7 @@ void nextMode() {
 	}
 }
 
-int xEyesMatrix[NUM_LEDS] = { 
+byte xEyesMatrix[NUM_LEDS] = { 
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 1, 0, 1, 0, 0, 1, 0, 1, 0,
 	0, 0, 1, 0, 0, 0, 0, 1, 0, 0,
@@ -214,7 +222,31 @@ void xEyesPattern() {
 	matrixPatternCreater(xEyesMatrix);
 }
 
-void matrixPatternCreater(int matrixPattern[NUM_LEDS]) {
+byte oEyesMatrix[NUM_LEDS] = { 
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+	1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+	0, 1, 1, 0,       0, 1, 1, 0,
+	   0, 0,             0, 0
+};
+
+void oEyesPattern() {
+	matrixPatternCreater(oEyesMatrix);
+}
+
+byte iEyesMatrix[NUM_LEDS] = { 
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	0, 1, 1, 0, 0, 0, 0, 1, 1, 0,
+	0, 1, 1, 0,       0, 1, 1, 0,
+	   1, 1,             1, 1
+};
+
+void iEyesPattern() {
+	matrixPatternCreater(iEyesMatrix);
+}
+
+void matrixPatternCreater(byte matrixPattern[NUM_LEDS]) {
 	CRGBPalette16 glitchPallete = glitchGradientMapBlue;
 	for ( int i = 0; i < NUM_LEDS; i++ ) {
 		if(matrixPattern[i] > 0) {
@@ -251,7 +283,7 @@ void roboCop() {
 	nscale8(leds, NUM_LEDS, fadeval);
 }
 
-int policeMatrix[NUM_LEDS] = { 
+byte policeMatrix[NUM_LEDS] = { 
 	0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
@@ -300,7 +332,7 @@ void basicRainbow() {
 	// 0, 0, 0, 0,       0, 0, 0, 0,
 	//    0, 0,             0, 0
 
-int equalizerOXOMatrix[NUM_LEDS] = { 
+byte equalizerOXOMatrix[NUM_LEDS] = { 
 	9, 3, 3, 2, 9, 9, 2, 3, 3, 9,
 	3, 4, 4, 3, 2, 2, 3, 4, 4, 3,
 	3, 4, 4, 3, 1, 1, 3, 4, 4, 3,
@@ -313,19 +345,19 @@ void equalizer1() {
 }
 
 
-int equalizerXXXMatrix[NUM_LEDS] = { 
-	2, 9, 9, 5, 3, 3, 5, 9, 9, 2,
-	4, 2, 5, 3, 1, 1, 3, 5, 2, 4,
-	4, 2, 5, 1, 0, 0, 1, 5, 2, 4,
-	4, 2, 5, 0,       0, 5, 2, 4,
-	   2, 5,             5, 2
+byte equalizerXXXMatrix[NUM_LEDS] = { 
+	5, 3, 9, 9, 2, 2, 9, 9, 3, 5,
+	4, 5, 3, 2, 1, 1, 2, 3, 5, 4,
+	4, 5, 3, 1, 0, 0, 1, 3, 5, 4,
+	4, 5, 3, 0,       0, 3, 5, 4,
+	   5, 3,             3, 5
 } ;
 void equalizer2() {
-	equalizerBreath(equalizerXXXMatrix, 6);
+	equalizerSingle(equalizerXXXMatrix, 6);
 }
 
 
-int equalizerBreathMatrix[NUM_LEDS] = { 
+byte equalizerBreathMatrix[NUM_LEDS] = { 
 	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
 	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
 	4, 3, 2, 1, 0, 0, 1, 2, 3, 4,
@@ -336,7 +368,18 @@ void equalizer3() {
 	equalizerBreath(equalizerBreathMatrix, 5);
 }
 
-void equalizerBreath(int equalizerMatrix[NUM_LEDS], int equalizerBands) {
+byte equalizerStandartMatrix[NUM_LEDS] = { 
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+	1, 1, 1, 1,       1, 1, 1, 1,
+	   0, 0,             0, 0
+};
+void equalizer4() {
+	equalizerBreath(equalizerStandartMatrix, 5);
+}
+
+void equalizerBreath(byte equalizerMatrix[NUM_LEDS], int equalizerBands) {
 	unsigned long startTime = millis(); 
 	unsigned int amp = 0; 
 	unsigned int maxAmp = 0;
@@ -376,7 +419,7 @@ void equalizerBreath(int equalizerMatrix[NUM_LEDS], int equalizerBands) {
 	}
 }
 
-void equalizerSingle(int equalizerMatrix[NUM_LEDS], int equalizerBands) {
+void equalizerSingle(byte equalizerMatrix[NUM_LEDS], int equalizerBands) {
 	unsigned long startTime = millis(); 
 	unsigned int amp = 0; 
 	unsigned int maxAmp = 0;
